@@ -1,0 +1,44 @@
+#!groovy​
+
+//Variables para plugin OWASP
+
+//Required metadata
+env.sonar_projectKey="webapp-devoluciones"
+env.sonar_projectName="webapp-devoluciones" 
+env.sonar_projectVersion="1.0"
+env.sonar_dependencyCheck_reportPath='dependency-check-report.xml'
+env.sonar_dependencyCheck_htmlReportPath='dependency-check-report.html'
+// Comma-separated paths to directories with sources (required)
+env.sonar_sources='src'
+// Language
+env.sonar_java_binaries='target/classes'
+
+env.sonar_language='java'
+//Encoding of the source files
+env.sonar_sourceEncoding='UTF-8'
+
+node{
+     stage('Descargar Fuentes') { 
+       checkout scm   
+    }
+    
+    def mvnHome = tool 'jenkinsmvn';
+    
+    stage('Compilar') { 
+  	        sh "${mvnHome}/bin/mvn -Pentorno-desarrollo clean package"   
+    }     
+  
+  	  	stage('Ejecutar pruebas caja blanca') {
+	    //OWASP Dependency-Check 
+	    dependencyCheckAnalyzer datadir: '', hintsFile: '', includeCsvReports: false, includeHtmlReports: true, includeJsonReports: false, includeVulnReports: false, isAutoupdateDisabled: false, outdir: '', scanpath: '', skipOnScmChange: false, skipOnUpstreamChange: false, suppressionFile: '', zipExtensions: ''
+	    dependencyCheckPublisher canComputeNew: false, defaultEncoding: '', healthy: '', pattern: '', unHealthy: ''  
+      
+  def scannerHome = tool 'SonarQubeScanner';
+	    withSonarQubeEnv('SonarQubeServer') {
+	        //SE DEBE DEFINIR EN UN STRING GROOVY DE UNA SOLA LINEA:
+            //sh " ${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=${sonar_projectKey} -Dsonar.projectName=${sonar_projectName} -Dsonar.projectVersion=${sonar_projectVersion} -Dsonar.dependencyCheck.reportPath=${sonar_dependencyCheck_reportPath} -Dsonar.dependencyCheck.htmlReportPath=${sonar_dependencyCheck_htmlReportPath} -Dsonar.sources=${sonar_sources} -Dsonar.language=${sonar_language} -Dsonar.sourceEncoding=${sonar_sourceEncoding} -Dsonar.java.binaries=${sonar_java_binaries} " 
+	        sh " ${mvnHome}/bin/mvn sonar:sonar -Dsonar.projectKey=${sonar_projectKey} -Dsonar.projectName=${sonar_projectName} -Dsonar.projectVersion=${sonar_projectVersion} -Dsonar.dependencyCheck.reportPath=${sonar_dependencyCheck_reportPath} -Dsonar.dependencyCheck.htmlReportPath=${sonar_dependencyCheck_htmlReportPath} -Dsonar.sources=${sonar_sources} -Dsonar.language=${sonar_language} -Dsonar.sourceEncoding=${sonar_sourceEncoding} -Dsonar.java.binaries=${sonar_java_binaries} " 
+		    //sh "${mvnHome}/bin/mvn sonar:sonar"   
+	    }
+  }
+}

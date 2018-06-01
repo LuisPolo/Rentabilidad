@@ -1,0 +1,50 @@
+// This shows a simple build wrapper example, using the AnsiColor plugin.
+	
+	pipeline { 
+		agent any
+		triggers { pollSCM('* * * * *') }
+		
+		stages {
+		
+		
+			stage('Probar unitariamente') { 
+				steps { 
+					script{
+				        def mvnHome = tool 'jenkinsmvn';
+						sh "${mvnHome}/bin/mvn -f rentabilidad-datos/pom.xml test"					
+					}
+				}
+			}
+		
+			stage('Analisis de codigo') { 
+				steps { 
+					withSonarQubeEnv('SonarQubeServer') {
+						script{
+					        def mvnHome = tool 'jenkinsmvn';
+							sh "${mvnHome}/bin/mvn -f rentabilidad-datos/pom.xml sonar:sonar"
+						}
+					}
+				}
+			}			
+			
+		   stage('Generar desplegable'){
+				steps { 
+					script{
+				        def mvnHome = tool 'jenkinsmvn';
+						sh "${mvnHome}/bin/mvn -f rentabilidad-datos/pom.xml -Pentorno-local clean package install"					
+					}
+				}		   
+		   }		   
+			
+		}
+		
+		post {
+			failure {
+				mail to: 'csanchez@eknowit.com',
+					subject: "Failed Pipeline: ${currentBuild.fullDisplayName}",
+					body: "Something is wrong with ${env.BUILD_URL}"
+			}
+		}
+		
+	}
+

@@ -1,0 +1,34 @@
+#!groovy​
+ 
+ node{
+		 stage('Descargar Fuentes') { 
+		      checkout scm
+		   }     
+		  
+		   stage('Compilando con maven')
+		   {
+		        def mvnHome = tool 'jenkinsmvn';
+		  	    sh "${mvnHome}/bin/mvn -f rentabilidad-datos/pom.xml -Pentorno-local clean package install"   
+				sh "${mvnHome}/bin/mvn -f rentabilidad-servicio/pom.xml -Pentorno-local clean package install"   
+		   }
+		
+		  
+		  	stage('Deployment en Wildfly') {	
+			  		
+		
+		  			withCredentials([usernamePassword(credentialsId: 'wildfly-desa_admin', 
+		  			                               passwordVariable: 'WILDFLY_DESA_ADMIN_PASSWORD', 
+		  			                               usernameVariable: 'WILDFLY_DESA_ADMIN_USER')]) {
+		    
+		    	               def comandoWildFly = " java -jar ${JENKINS_HOME}/jboss-cli-client.jar --controller=${WILDFLY_DESA_HOST}  --connect --user=${WILDFLY_DESA_ADMIN_USER} --password=${WILDFLY_DESA_ADMIN_PASSWORD} 'undeploy rentabilidad-datos.war --all-relevant-server-groups'|| true"
+			               sh comandoWildFly                            
+		  			       comandoWildFly = " java -jar ${JENKINS_HOME}/jboss-cli-client.jar --controller=${WILDFLY_DESA_HOST}  --connect --user=${WILDFLY_DESA_ADMIN_USER} --password=${WILDFLY_DESA_ADMIN_PASSWORD} 'deploy rentabilidad-datos/target/rentabilidad-datos.war --server-groups=sura-cluster-group-desarrollo-01' "
+			               sh comandoWildFly    			                              	               
+							comandoWildFly = " java -jar ${JENKINS_HOME}/jboss-cli-client.jar --controller=${WILDFLY_DESA_HOST}  --connect --user=${WILDFLY_DESA_ADMIN_USER} --password=${WILDFLY_DESA_ADMIN_PASSWORD} 'undeploy rentabilidad-servicio.war --all-relevant-server-groups'|| true"
+			               sh comandoWildFly                            
+		  			       comandoWildFly = " java -jar ${JENKINS_HOME}/jboss-cli-client.jar --controller=${WILDFLY_DESA_HOST}  --connect --user=${WILDFLY_DESA_ADMIN_USER} --password=${WILDFLY_DESA_ADMIN_PASSWORD} 'deploy rentabilidad-servicio/target/rentabilidad-servicio.war --server-groups=sura-cluster-group-desarrollo-01' "
+			               sh comandoWildFly
+		  			                           
+		  			       }
+		      } 
+}		      

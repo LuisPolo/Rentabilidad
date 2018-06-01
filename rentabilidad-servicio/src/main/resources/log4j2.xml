@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE xml>
+<Configuration status="WARN" name="log-config">
+
+	<Properties>
+		<Property name="APLICACION">${project.artifactId}</Property>
+		<Property name="RUTA">${sys:jboss.server.log.dir}/apps/${APLICACION}</Property>
+	</Properties>
+
+	<appenders>
+		<Console name="Consola" target="SYSTEM_OUT">
+			<PatternLayout pattern="[%-50c] - [Linea %-5L] --> %m%n" />
+		</Console>
+		<RollingFile name="ArchivoLog" fileName="${RUTA}/${APLICACION}.log" filePattern="${RUTA}/historial/${APLICACION}.%d{yyyy-MM-dd}.%i.log">
+			<PatternLayout>
+				<pattern>%d{yyyy/MM/dd HH:mm:ss,SSS} [%-6p] [%-50c] - [Linea %-5L] --> %m%n</pattern>
+			</PatternLayout>
+			<Policies>              
+	            <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+	        </Policies>
+		</RollingFile>
+	</appenders>
+
+	<loggers>
+		<root level="trace">
+			<appender-ref ref="Consola" />
+			<appender-ref ref="ArchivoLog" />
+		</root>
+	</loggers>
+
+</Configuration>

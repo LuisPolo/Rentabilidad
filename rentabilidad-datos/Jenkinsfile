@@ -1,0 +1,49 @@
+// This shows a simple build wrapper example, using the AnsiColor plugin.
+	
+	pipeline { 
+		agent any
+		triggers { pollSCM('* * * * *') }
+		
+		stages {
+			stage('Probar unitariamente') { 
+				steps { 
+					bat "test.bat"
+				}
+			}
+		
+			
+			stage('Analisis de código') { 
+				steps { 
+					withSonarQubeEnv('SonarQubeLocal') {
+						bat 'anali_code.bat'
+					}
+					
+				}
+			}
+			
+			stage('Verificar calidad técnica') { 
+				steps { 
+					script{					
+					timeout(time: 1, unit: 'HOURS') { // Just in case something goes wrong, pipeline will be killed after a timeout
+						def qg = waitForQualityGate() // Reuse taskId previously collected by withSonarQubeEnv
+						if (qg.status != 'OK') {
+						  error "Pipeline aborted due to quality gate failure: ${qg.status}"
+						}
+					}
+					}
+				}
+			}
+			
+			
+		}
+		
+		post {
+			failure {
+				mail to: 'surbano@gmd.com.pe',
+					subject: "Failed Pipeline: ${currentBuild.fullDisplayName}",
+					body: "Something is wrong with ${env.BUILD_URL}"
+			}
+		}
+		
+	}
+
